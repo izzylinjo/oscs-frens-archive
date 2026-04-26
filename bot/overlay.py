@@ -16,6 +16,7 @@ def add_overlay(input_path, streamer_name):
 
     drawtext = (
         f"drawtext=text='{safe_name}':"
+        "fontfile='C\\:/Windows/Fonts/arial.ttf':"
         "fontcolor=white:"
         "fontsize=18:"
         "x=10:y=h-th-10:"
