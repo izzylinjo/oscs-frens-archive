@@ -1,5 +1,5 @@
 # OSCS & Frens Archive — Project Status
-Last updated: session 2 (core bot complete, moving to Claude Code)
+Last updated: session 3 (full pipeline code complete, YouTube setup pending)
 
 ## What this is
 Automated YouTube Shorts bot that pulls top Twitch clips from OSCS and their
@@ -16,62 +16,78 @@ OSCS & Frens Archive
 - [x] GitHub repo created and connected to VS Code
 - [x] .gitignore created and working (venv, db, .env all excluded)
 - [x] Virtual environment: oscsprojvenv
-- [x] config.py — all settings, API keys from .env, validated on startup
+- [x] config.py — all settings, API keys from .env, STREAMER_SOCIALS, GEMINI_MODEL
 - [x] bot/__init__.py
 - [x] bot/db.py — full SQLite schema, clip states, deduplication, streamer tracking
+      - custom_title TEXT (set when reviewer replies in Discord)
+      - queued_at TEXT (enforced on every queued transition)
+      - migration block handles existing DBs safely
 - [x] bot/twitch.py — incremental fetcher, inserts clips into DB, retry logic
 - [x] bot/discord_bot.py — review interface working, reactions update DB
+      - reply handler sets custom_title (authoritative) + title (display)
 - [x] Discord server created with #clip-review and #clip-inbox channels
 - [x] Discord bot live and tested — 55 clips posted, reactions working
 - [x] Gemini API key obtained and in .env
+- [x] bot/titles.py — Whisper base model + Gemini 1.5 Flash title generation
+- [x] bot/overlay.py — ffmpeg drawtext, white 18px, bottom-left, shadow
+- [x] bot/queue.py — fill_queue + post_next_queued, file paths via convention only
+- [x] bot/youtube.py — YouTube Data API v3, OAuth2, resumable upload, socials desc
+- [x] main.py — AsyncIOScheduler + asyncio Discord bot, sync jobs in thread pool
+- [ ] Install new packages (see below)
 - [ ] Google Cloud project set up for YouTube Data API v3
-- [ ] bot/titles.py — Gemini title generation via Whisper transcript
-- [ ] bot/overlay.py — ffmpeg streamer name overlay
-- [ ] bot/queue.py — approved clip queue, 30 min stagger
-- [ ] bot/youtube.py — YouTube Shorts upload
-- [ ] main.py — scheduler, noon + midnight fetch, ties everything together
+- [ ] Drop client_secrets.json in repo root
+- [ ] First YouTube OAuth2 login (browser flow, token cached to youtube_token.json)
+- [ ] End-to-end test: approve a clip → queue fills → uploads to YouTube
 
 ## Next steps (in order)
-1. bot/titles.py — Whisper transcription + Gemini title generation
-2. bot/overlay.py — ffmpeg bottom-left corner overlay
-3. bot/queue.py — drip queue respecting MAX_QUEUE_SIZE=36
-4. bot/youtube.py — YouTube Data API v3 upload with OAuth2
-5. main.py — APScheduler, noon + midnight Twitch fetch, 30 min queue runner
+1. Install new packages:
+      pip install openai-whisper apscheduler google-api-python-client google-auth-oauthlib google-auth-httplib2
+   (ffmpeg must also be installed as a system binary)
+2. Set up Google Cloud project → enable YouTube Data API v3 → download OAuth2
+   client_secrets.json → place in repo root
+3. Run main.py once — first run opens browser for YouTube OAuth2 consent
+   Token is cached to youtube_token.json (gitignored) — only needed once
+4. Approve a test clip in Discord → watch fill_queue() → check YouTube
+5. Verify overlay text renders, title is under 60 chars, description has socials
+6. Add streamer Twitter/TikTok/YouTube links to STREAMER_SOCIALS in config.py
+7. Plan Oracle Free Tier VPS migration when ready to run 24/7
 
 ## Tech stack
 - Language: Python 3.12.3
 - Virtual env: oscsprojvenv
 - Clip source: Twitch public API (no streamer permission needed)
-- Transcription: Whisper (local, free, CPU)
-- Title generation: Gemini free tier API
-- Overlay: ffmpeg (streamer name bottom-left corner, small)
+- Transcription: Whisper base model (local, free, CPU)
+- Title generation: Gemini 1.5 Flash (free tier REST API)
+- Overlay: ffmpeg drawtext (streamer name, bottom-left, 18px white with shadow)
 - Review: Discord bot (#clip-review channel, not DMs)
 - Database: SQLite (db/clips.db, gitignored)
-- Upload: YouTube Data API v3
-- Scheduler: APScheduler (noon + midnight fetch, 30 min post stagger)
-- Runtime now: Windows + VS Code (local dev)
+- Upload: YouTube Data API v3 (OAuth2, token cached)
+- Scheduler: APScheduler AsyncIOScheduler (noon + midnight fetch, 30 min post stagger)
+- Runtime now: Windows + Claude Code desktop (local dev)
 - Runtime later: Oracle Free Tier VPS (24/7 production)
 
 ## Project folder structure
 oscs-frens-archive/
 ├── .gitignore
-├── .env                  (gitignored — never commit)
+├── .env                      (gitignored — never commit)
 ├── CLAUDE.md
 ├── project-status.txt
 ├── config.py
-├── main.py               (not yet written)
+├── main.py                   ✅ written
+├── client_secrets.json       (gitignored — add when Google Cloud ready)
+├── youtube_token.json        (gitignored — auto-created on first OAuth2 login)
 ├── db/
-│   └── clips.db          (gitignored, auto-created)
-├── downloads/            (gitignored, temp clip storage)
+│   └── clips.db              (gitignored, auto-created)
+├── downloads/                (gitignored, temp clip storage — cleaned after upload)
 └── bot/
     ├── __init__.py
-    ├── db.py
-    ├── twitch.py
-    ├── discord_bot.py
-    ├── titles.py         (not yet written)
-    ├── overlay.py        (not yet written)
-    ├── queue.py          (not yet written)
-    └── youtube.py        (not yet written)
+    ├── db.py                 ✅
+    ├── twitch.py             ✅
+    ├── discord_bot.py        ✅
+    ├── titles.py             ✅
+    ├── overlay.py            ✅
+    ├── queue.py              ✅
+    └── youtube.py            ✅
 
 ## Streamer list
 
@@ -95,15 +111,17 @@ oscs-frens-archive/
 2. twitch.py fetches top 5 clips per streamer since last_checked_at
 3. Clips inserted into DB with status = fetched
 4. discord_bot.py posts new clips to #clip-review as embeds
-5. You react check = approved, x = rejected, reply = custom title + approved
+5. You react ✅ = approved, ❌ = rejected, reply = custom_title set + approved
 6. You can drop Twitch clip URLs into #clip-inbox for manual submission
-7. queue.py picks up approved clips, moves to queued, posts every 30 mins
-8. titles.py downloads clip, runs Whisper, sends transcript to Gemini for title
-9. overlay.py burns streamer name in bottom-left corner via ffmpeg
-10. youtube.py uploads to YouTube Shorts with auto description + streamer socials
-11. All approved clips archived in SQLite permanently
-12. End of week: ffmpeg compiles approved clips → you approve → long-form post
-13. End of month: monthly recap compiled from archive
+7. queue.py fill_queue() picks up approved clips every 30 mins
+8. For each: downloads mp4 → Whisper transcription → Gemini title → ffmpeg overlay
+9. File path flows through functions as return values — nothing stored in DB
+10. update_status('queued') sets queued_at automatically
+11. queue.py post_next_queued() picks oldest by queued_at, calls youtube.upload()
+12. overlay file deleted after successful upload
+13. All approved clips archived in SQLite permanently
+14. End of week: ffmpeg compiles approved clips → you approve → long-form post
+15. End of month: monthly recap compiled from archive
 
 ## Key decisions made
 - No vertical crop (9:16) for now — post landscape, revisit month 2
@@ -115,11 +133,16 @@ oscs-frens-archive/
 - YouTube Shorts only at launch — TikTok/Instagram/Twitter later
 - Weekly + monthly compilations = long-form on main channel
 - MAX_QUEUE_SIZE = 36 (approx 18 hours of content)
-- Approved clips that exceed queue cap staged as approved, not lost
-- Only queue.py sets status to queued — nothing else touches that transition
+- Approved clips that exceed queue cap stay as approved, not lost
+- Only queue.py sets status to queued — update_status enforces queued_at
 - Status lifecycle: fetched → approved → queued → uploaded (or rejected)
 - Discord channel not DMs for review (scales better, easier to debug)
 - last_checked_at updated to max(clip.created_at) not now() to prevent gaps
+- custom_title is the authoritative field (set by Discord reply)
+  title is the display/working field (overwritten by Gemini or custom_title)
+- File paths are NOT stored in DB — derived from naming convention in queue.py
+  Convention: downloads/{clip_id}_overlay.mp4
+  If file missing on post attempt, clip reverts to approved for reprocessing
 
 ## Clip state lifecycle
 fetched → approved → queued → uploaded
@@ -130,12 +153,19 @@ fetched → approved → queued → uploaded
 - Twitch: Client ID + Secret done
 - Gemini: API key done
 - Discord: Bot token done, User ID done, clip-review channel ID done, clip-inbox channel ID done
-- YouTube: OAuth2 client secrets (not yet set up — need Google Cloud project)
+- YouTube: OAuth2 client secrets (NOT YET — need Google Cloud project)
 
 ## Installed packages (oscsprojvenv)
 - python-dotenv
 - requests
 - discord.py
+--- need to install ---
+- openai-whisper
+- apscheduler
+- google-api-python-client
+- google-auth-oauthlib
+- google-auth-httplib2
+(ffmpeg — system binary, not pip)
 
 ## Karpathy coding rules (always follow)
 - Think before coding — state plan + assumptions, get confirmation first
@@ -144,9 +174,5 @@ fetched → approved → queued → uploaded
 - Goal-driven — define success criteria before writing anything
 
 ## How to resume in a new Claude session
-Paste the GitHub repo URL into chat and say:
-"Here is my project repo, please read it and let's continue building."
-Claude will fetch the repo and be fully up to speed instantly.
-
-For Claude Code: navigate to project folder and run claude
-The CLAUDE.md file will be read automatically.
+For Claude Code desktop: open the project folder — CLAUDE.md loads automatically.
+Read project-status.txt for full context before doing anything.

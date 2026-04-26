@@ -186,14 +186,14 @@ async def on_message(message):
         if clip:
             new_title = message.content.strip()
             if new_title:
-                # Update title in DB then approve
+                # Set custom_title (authoritative) + title (display), then approve
                 import sqlite3
                 from config import DB_PATH
                 from bot.db import now_utc
                 conn = sqlite3.connect(DB_PATH)
                 conn.execute(
-                    "UPDATE clips SET title = ?, status = 'approved', approved_at = ? WHERE clip_id = ?",
-                    (new_title, now_utc(), clip["clip_id"])
+                    "UPDATE clips SET custom_title = ?, title = ?, status = 'approved', approved_at = ? WHERE clip_id = ?",
+                    (new_title, new_title, now_utc(), clip["clip_id"])
                 )
                 conn.commit()
                 conn.close()

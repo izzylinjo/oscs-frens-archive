@@ -55,6 +55,7 @@ POLL_DELAY_HOURS = 3
 # Gemini
 # ============================================================
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL   = "gemini-1.5-flash"
 
 # ============================================================
 # Discord
@@ -63,6 +64,24 @@ DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 DISCORD_USER_ID = int(os.getenv("DISCORD_USER_ID"))
 DISCORD_CLIP_REVIEW_CHANNEL_ID = int(os.getenv("DISCORD_CLIP_REVIEW_CHANNEL_ID"))
 DISCORD_CLIP_INBOX_CHANNEL_ID = int(os.getenv("DISCORD_CLIP_INBOX_CHANNEL_ID"))
+# ============================================================
+# Streamer socials — used in YouTube description
+# All fields optional except twitch. Add twitter/tiktok/youtube anytime.
+# ============================================================
+STREAMER_SOCIALS = {
+    "youngbasedgo": {"twitch": "https://twitch.tv/youngbasedgo"},
+    "yugi2x":       {"twitch": "https://twitch.tv/yugi2x"},
+    "redify":       {"twitch": "https://twitch.tv/redify"},
+    "bigmonraph":   {"twitch": "https://twitch.tv/bigmonraph"},
+    "sunnys":       {"twitch": "https://twitch.tv/sunnys"},
+    "santipulgaz":  {"twitch": "https://twitch.tv/santipulgaz"},
+    "arky":         {"twitch": "https://twitch.tv/arky"},
+    "nosiiree":     {"twitch": "https://twitch.tv/Nosiiree"},
+    "1jdab1":       {"twitch": "https://twitch.tv/1jdab1"},
+    "bonnie":       {"twitch": "https://twitch.tv/bonnie"},
+    "aozami":       {"twitch": "https://twitch.tv/aozami"},
+}
+
 # ============================================================
 # YouTube
 # ============================================================

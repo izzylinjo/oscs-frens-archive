@@ -33,6 +33,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS clips (
             clip_id             TEXT PRIMARY KEY,
             title               TEXT,
+            custom_title        TEXT,
             streamer            TEXT,
             clip_url            TEXT,
             mp4_url             TEXT,
@@ -41,6 +42,7 @@ def init_db():
             created_at          TEXT,
             fetched_at          TEXT,
             approved_at         TEXT,
+            queued_at           TEXT,
             uploaded_at         TEXT,
             status              TEXT DEFAULT 'fetched',
             priority            INTEGER DEFAULT 0,
@@ -63,6 +65,13 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_clips_streamer
             ON clips(streamer);
     """)
+
+    # Migrate existing databases that predate these columns
+    for col, col_type in [("custom_title", "TEXT"), ("queued_at", "TEXT")]:
+        try:
+            c.execute(f"ALTER TABLE clips ADD COLUMN {col} {col_type}")
+        except sqlite3.OperationalError:
+            pass  # column already exists
 
     conn.commit()
     conn.close()
@@ -129,6 +138,8 @@ def update_status(clip_id, status):
     timestamp_field = None
     if status == "approved":
         timestamp_field = "approved_at"
+    elif status == "queued":
+        timestamp_field = "queued_at"
     elif status == "uploaded":
         timestamp_field = "uploaded_at"
 
@@ -200,6 +211,24 @@ def get_queue_size():
     ).fetchone()
     conn.close()
     return row[0]
+
+
+def update_title(clip_id, title):
+    """Update the working title for a clip (used after Gemini generation)."""
+    conn = get_conn()
+    conn.execute("UPDATE clips SET title = ? WHERE clip_id = ?", (title, clip_id))
+    conn.commit()
+    conn.close()
+
+
+def get_next_to_post():
+    """Return the oldest queued clip ready to upload, or None."""
+    conn = get_conn()
+    row = conn.execute(
+        "SELECT * FROM clips WHERE status = 'queued' ORDER BY queued_at ASC LIMIT 1"
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
 
 
 # ============================================================
