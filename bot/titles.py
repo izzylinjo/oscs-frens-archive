@@ -1,3 +1,4 @@
+import base64
 import requests
 from config import GEMINI_API_KEY, GEMINI_MODEL
 
@@ -19,14 +20,39 @@ def _transcribe(video_path):
     return result["text"].strip()
 
 
-def _ask_gemini(prompt):
+def _get_thumbnail_b64(clip):
+    """Download clip thumbnail and return as base64, or None if unavailable."""
+    mp4_url = clip.get("mp4_url")
+    if not mp4_url:
+        return None
+    thumbnail_url = mp4_url.replace(".mp4", "-preview-480x272.jpg")
+    try:
+        resp = requests.get(thumbnail_url, timeout=10)
+        if resp.ok and "image" in resp.headers.get("content-type", ""):
+            return base64.b64encode(resp.content).decode("utf-8")
+    except Exception:
+        pass
+    return None
+
+
+def _ask_gemini(prompt, image_b64=None):
     url = (
         f"https://generativelanguage.googleapis.com/v1beta/models/"
         f"{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
     )
+    parts = []
+    if image_b64:
+        parts.append({
+            "inline_data": {
+                "mime_type": "image/jpeg",
+                "data": image_b64,
+            }
+        })
+    parts.append({"text": prompt})
+
     resp = requests.post(
         url,
-        json={"contents": [{"parts": [{"text": prompt}]}]},
+        json={"contents": [{"parts": parts}]},
         timeout=30,
     )
     resp.raise_for_status()
@@ -36,31 +62,43 @@ def _ask_gemini(prompt):
 def generate_titles(clip, local_path):
     """Return 3 title options for a clip as a list of strings.
 
-    Transcribes with Whisper, then asks Gemini for 3 distinct options.
-    Falls back to [original_title] (list of one) if transcript is empty.
+    Sends the clip thumbnail + transcript to Gemini for visual + audio context.
+    Falls back to [original_title] if transcript is empty and thumbnail unavailable.
     """
     print(f"[titles] Transcribing {clip['clip_id']}...")
     transcript = _transcribe(local_path)
 
-    if not transcript:
-        print("[titles] Empty transcript — using original title as only option")
+    image_b64 = _get_thumbnail_b64(clip)
+    if image_b64:
+        print("[titles] Thumbnail fetched — sending to Gemini with transcript")
+    else:
+        print("[titles] No thumbnail available — text only")
+
+    if not transcript and not image_b64:
+        print("[titles] No transcript or thumbnail — using original title")
         return [clip["title"]]
 
-    print(f"[titles] Transcript ({len(transcript)} chars): {transcript[:80]}...")
+    if transcript:
+        print(f"[titles] Transcript ({len(transcript)} chars): {transcript[:80]}...")
 
-    prompt = f"""Write 3 different YouTube Shorts titles for a Twitch gaming clip.
+    prompt = f"""You are writing YouTube Shorts titles for clips from OSCS, a group of friends who stream together and constantly roast each other. The clips are funny because of the streamers' personalities, reactions, and group dynamics — not because of the game they're playing.
 
 Streamer: {clip['streamer']}
-Original title: {clip['title']}
-Transcript: {transcript}
+Original Twitch title: {clip['title']}
+Audio transcript: {transcript if transcript else "(no clear audio)"}
 
-Rules for each title:
-- Under 60 characters
-- Sparks curiosity, does NOT use clickbait phrases
-- Feels natural, like something a fan would say
-- Do NOT start with "Check out", "Watch", "This", or "When"
-- Include the streamer name only if it genuinely improves the title
+{'I have also provided a screenshot from the clip so you can see what is happening visually.' if image_b64 else ''}
+
+Write 3 different YouTube Shorts titles for this clip.
+
+Rules:
+- Under 60 characters each
+- Focus on the streamer's reaction, personality, or the moment — NOT the game
+- Feels like something a fan of the streamer would say, not a news headline
+- Do NOT use: "Check out", "Watch", "This", "When", "You won't believe"
+- Do NOT mention the game name unless it genuinely makes the title better
 - Each title must be meaningfully different from the others
+- If the clip is clearly about roasting or competing with a friend, lean into that
 
 Reply with EXACTLY 3 titles, one per line, numbered like:
 1. Title one here
@@ -69,7 +107,7 @@ Reply with EXACTLY 3 titles, one per line, numbered like:
 
 No extra text, no quotes."""
 
-    raw = _ask_gemini(prompt)
+    raw = _ask_gemini(prompt, image_b64=image_b64)
 
     titles = []
     for line in raw.splitlines():
