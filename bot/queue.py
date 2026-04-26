@@ -1,5 +1,5 @@
 import os
-import requests
+import subprocess
 from config import DOWNLOADS_DIR, MAX_QUEUE_SIZE
 from bot.db import (
     get_next_approved_clips,
@@ -19,7 +19,7 @@ def _overlay_path(clip_id):
 
 
 def _download_clip(clip):
-    """Download clip mp4 to downloads/. Returns local file path."""
+    """Download clip mp4 to downloads/ using yt-dlp. Returns local file path."""
     os.makedirs(DOWNLOADS_DIR, exist_ok=True)
     raw_path = os.path.join(DOWNLOADS_DIR, f"{clip['clip_id']}.mp4")
 
@@ -27,17 +27,14 @@ def _download_clip(clip):
         print(f"[queue] Already downloaded: {clip['clip_id']}")
         return raw_path
 
-    mp4_url = clip.get("mp4_url")
-    if not mp4_url:
-        raise ValueError(f"No mp4_url for clip {clip['clip_id']}")
-
     print(f"[queue] Downloading {clip['clip_id']}...")
-    resp = requests.get(mp4_url, stream=True, timeout=60)
-    resp.raise_for_status()
+    result = subprocess.run(
+        ["yt-dlp", "--output", raw_path, "--merge-output-format", "mp4", "--force-overwrites", clip["clip_url"]],
+        capture_output=True, text=True
+    )
 
-    with open(raw_path, "wb") as f:
-        for chunk in resp.iter_content(chunk_size=8192):
-            f.write(chunk)
+    if result.returncode != 0:
+        raise RuntimeError(f"[queue] yt-dlp failed:\n{result.stderr[-500:]}")
 
     print(f"[queue] Downloaded: {os.path.basename(raw_path)}")
     return raw_path
