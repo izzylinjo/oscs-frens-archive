@@ -1,5 +1,6 @@
 import time
 import requests
+from bot.db import clip_exists, get_last_checked, update_last_checked, insert_clip
 from datetime import datetime, timezone
 from config import (
     TWITCH_CLIENT_ID,
@@ -152,7 +153,7 @@ def fetch_clips_for_streamer(username, user_id):
         if clip_exists(clip["id"]):
             skipped += 1
             continue
-        new_clips.append({
+        clip_dict = {
             "clip_id":    clip["id"],
             "title":      clip["title"],
             "streamer":   username,
@@ -161,7 +162,9 @@ def fetch_clips_for_streamer(username, user_id):
             "duration":   clip.get("duration", 0),
             "view_count": clip["view_count"],
             "created_at": clip["created_at"],
-        })
+        }
+        insert_clip(clip_dict)
+        new_clips.append(clip_dict)
         if len(new_clips) >= CLIPS_PER_STREAMER:
             break
 

@@ -61,7 +61,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # ============================================================
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 DISCORD_USER_ID = int(os.getenv("DISCORD_USER_ID"))
-
+DISCORD_CLIP_REVIEW_CHANNEL_ID = int(os.getenv("DISCORD_CLIP_REVIEW_CHANNEL_ID"))
+DISCORD_CLIP_INBOX_CHANNEL_ID = int(os.getenv("DISCORD_CLIP_INBOX_CHANNEL_ID"))
 # ============================================================
 # YouTube
 # ============================================================
