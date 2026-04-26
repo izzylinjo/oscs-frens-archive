@@ -57,7 +57,7 @@ def upload_clip(clip, video_path):
     creds = _get_credentials()
     youtube = build("youtube", "v3", credentials=creds)
 
-    title = clip["title"][:100]  # YouTube title hard limit
+    title = (clip["title"][:92] + " #Shorts") if len(clip["title"]) > 92 else clip["title"] + " #Shorts"
     description = _build_description(clip)
 
     body = {
