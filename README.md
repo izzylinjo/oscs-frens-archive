@@ -4,6 +4,8 @@ Automated YouTube Shorts bot for the OSCS streamer group and friends.
 
 Pulls top Twitch clips → Discord review → YouTube Shorts, on autopilot.
 
+![Pipeline](pipeline.svg)
+
 ---
 
 ## How it works
