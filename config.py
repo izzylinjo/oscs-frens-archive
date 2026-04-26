@@ -58,7 +58,7 @@ POLL_DELAY_HOURS = 3
 # Gemini
 # ============================================================
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL   = "gemini-3.1-flash-lite-preview-06-17"
+GEMINI_MODEL   = "gemini-3.1-flash-lite-preview"
 
 # ============================================================
 # Discord
