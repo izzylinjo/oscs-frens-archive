@@ -8,8 +8,8 @@ def _get_whisper_model():
     global _whisper_model
     if _whisper_model is None:
         import whisper
-        print("[titles] Loading Whisper base model...")
-        _whisper_model = whisper.load_model("base")
+        print("[titles] Loading Whisper small model on GPU...")
+        _whisper_model = whisper.load_model("small", device="cuda")
     return _whisper_model
 
 
