@@ -16,7 +16,7 @@ def _get_whisper_model():
 
 def _transcribe(video_path):
     model = _get_whisper_model()
-    result = model.transcribe(video_path)
+    result = model.transcribe(video_path, language="en")
     return result["text"].strip()
 
 
