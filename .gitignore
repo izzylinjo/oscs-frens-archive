@@ -1,0 +1,26 @@
+# Virtual environment
+oscsprojvenv/
+
+# Environment variables
+.env
+
+# Database
+db/
+
+# Downloads
+downloads/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

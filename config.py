@@ -42,11 +42,11 @@ STREAMERS = [
     "1jdab1",
     # Friends
     "bonnie",
-    "aoizami",
+    "aozami",
 ]
 
 # How many top clips to fetch per streamer per stream
-CLIPS_PER_STREAMER = 3
+CLIPS_PER_STREAMER = 5
 
 # Hours to wait after a stream ends before fetching clips
 POLL_DELAY_HOURS = 3
@@ -72,7 +72,8 @@ YOUTUBE_CLIENT_SECRETS_FILE = os.getenv(
 # ============================================================
 # Queue / posting
 # ============================================================
-# Minutes between each YouTube Short post
+# Queue / posting
+MAX_QUEUE_SIZE = 36
 POST_STAGGER_MINUTES = 30
 
 # ============================================================
