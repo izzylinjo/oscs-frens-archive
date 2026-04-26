@@ -67,7 +67,11 @@ def init_db():
     """)
 
     # Migrate existing databases that predate these columns
-    for col, col_type in [("custom_title", "TEXT"), ("queued_at", "TEXT")]:
+    for col, col_type in [
+        ("custom_title", "TEXT"),
+        ("queued_at", "TEXT"),
+        ("title_options", "TEXT"),
+    ]:
         try:
             c.execute(f"ALTER TABLE clips ADD COLUMN {col} {col_type}")
         except sqlite3.OperationalError:
@@ -131,7 +135,7 @@ def update_status(clip_id, status):
     Valid statuses: fetched, approved, rejected, queued, uploaded
     Only queue.py should set status to 'queued'.
     """
-    valid = {"fetched", "approved", "rejected", "queued", "uploaded"}
+    valid = {"fetched", "approved", "rejected", "awaiting_title", "queued", "uploaded"}
     if status not in valid:
         raise ValueError(f"[db] Invalid status '{status}'. Must be one of: {valid}")
 
@@ -217,6 +221,15 @@ def update_title(clip_id, title):
     """Update the working title for a clip (used after Gemini generation)."""
     conn = get_conn()
     conn.execute("UPDATE clips SET title = ? WHERE clip_id = ?", (title, clip_id))
+    conn.commit()
+    conn.close()
+
+
+def update_title_options(clip_id, titles):
+    """Store the 3 Gemini-generated title options as a JSON array."""
+    import json
+    conn = get_conn()
+    conn.execute("UPDATE clips SET title_options = ? WHERE clip_id = ?", (json.dumps(titles), clip_id))
     conn.commit()
     conn.close()
 

@@ -14,6 +14,7 @@ REQUIRED = [
     "DISCORD_USER_ID",
     "DISCORD_CLIP_REVIEW_CHANNEL_ID",
     "DISCORD_CLIP_INBOX_CHANNEL_ID",
+    "DISCORD_CLIP_FINAL_APPROVAL_CHANNEL_ID",
 ]
 
 missing = [key for key in REQUIRED if not os.getenv(key)]
@@ -66,6 +67,7 @@ DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 DISCORD_USER_ID = int(os.getenv("DISCORD_USER_ID"))
 DISCORD_CLIP_REVIEW_CHANNEL_ID = int(os.getenv("DISCORD_CLIP_REVIEW_CHANNEL_ID"))
 DISCORD_CLIP_INBOX_CHANNEL_ID = int(os.getenv("DISCORD_CLIP_INBOX_CHANNEL_ID"))
+DISCORD_CLIP_FINAL_APPROVAL_CHANNEL_ID = int(os.getenv("DISCORD_CLIP_FINAL_APPROVAL_CHANNEL_ID"))
 # ============================================================
 # Streamer socials — used in YouTube description
 # All fields optional except twitch. Add twitter/tiktok/youtube anytime.

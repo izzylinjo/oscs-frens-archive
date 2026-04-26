@@ -26,7 +26,7 @@ async def twitch_fetch_job():
 async def queue_cycle_job():
     """Fill queue with approved clips, then post the next queued clip."""
     print("[main] Queue cycle triggered")
-    await asyncio.to_thread(fill_queue)
+    await asyncio.to_thread(fill_queue, bot)
     await asyncio.to_thread(post_next_queued)
 
 

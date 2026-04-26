@@ -30,50 +30,63 @@ def _ask_gemini(prompt):
         timeout=30,
     )
     resp.raise_for_status()
-    raw = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-    # First line only, strip surrounding quotes
-    return raw.strip().splitlines()[0].strip().strip('"').strip("'")
+    return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
 
 
-def generate_title(clip, local_path):
-    """Return the best title for a clip.
+def generate_titles(clip, local_path):
+    """Return 3 title options for a clip as a list of strings.
 
-    Returns custom_title immediately if set by the reviewer.
-    Otherwise transcribes with Whisper and generates a title via Gemini.
-    Falls back to the original Twitch title if transcript is empty.
+    Transcribes with Whisper, then asks Gemini for 3 distinct options.
+    Falls back to [original_title] (list of one) if transcript is empty.
     """
-    if clip.get("custom_title"):
-        print(f"[titles] Using custom title: {clip['custom_title']}")
-        return clip["custom_title"]
-
     print(f"[titles] Transcribing {clip['clip_id']}...")
     transcript = _transcribe(local_path)
 
     if not transcript:
-        print(f"[titles] Empty transcript — keeping original title")
-        return clip["title"]
+        print("[titles] Empty transcript — using original title as only option")
+        return [clip["title"]]
 
     print(f"[titles] Transcript ({len(transcript)} chars): {transcript[:80]}...")
 
-    prompt = f"""Write a YouTube Shorts title for a Twitch gaming clip.
+    prompt = f"""Write 3 different YouTube Shorts titles for a Twitch gaming clip.
 
 Streamer: {clip['streamer']}
 Original title: {clip['title']}
 Transcript: {transcript}
 
-Rules:
+Rules for each title:
 - Under 60 characters
 - Sparks curiosity, does NOT use clickbait phrases
 - Feels natural, like something a fan would say
 - Do NOT start with "Check out", "Watch", "This", or "When"
 - Include the streamer name only if it genuinely improves the title
+- Each title must be meaningfully different from the others
 
-Reply with ONLY the title. No quotes, no explanation."""
+Reply with EXACTLY 3 titles, one per line, numbered like:
+1. Title one here
+2. Title two here
+3. Title three here
 
-    title = _ask_gemini(prompt)
+No extra text, no quotes."""
 
-    if len(title) > 60:
-        title = title[:57] + "..."
+    raw = _ask_gemini(prompt)
 
-    print(f"[titles] Generated: {title}")
-    return title
+    titles = []
+    for line in raw.splitlines():
+        line = line.strip()
+        if line and line[0].isdigit() and ". " in line:
+            title = line.split(". ", 1)[1].strip().strip('"').strip("'")
+            if len(title) > 60:
+                title = title[:57] + "..."
+            titles.append(title)
+
+    if len(titles) != 3:
+        print(f"[titles] WARNING: expected 3 titles, got {len(titles)} — padding with original")
+        while len(titles) < 3:
+            titles.append(clip["title"])
+
+    print(f"[titles] Generated {len(titles)} options:")
+    for i, t in enumerate(titles, 1):
+        print(f"  {i}. {t}")
+
+    return titles

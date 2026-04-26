@@ -5,11 +5,12 @@ from bot.db import (
     get_next_approved_clips,
     update_status,
     update_title,
+    update_title_options,
     get_next_to_post,
     get_conn,
     now_utc,
 )
-from bot.titles import generate_title
+from bot.titles import generate_titles
 from bot.overlay import add_overlay
 
 
@@ -40,34 +41,54 @@ def _download_clip(clip):
     return raw_path
 
 
-def fill_queue():
-    """Process approved clips into the queue up to MAX_QUEUE_SIZE.
+def fill_queue(discord_bot=None):
+    """Process approved clips: download → Whisper → overlay → generate titles → post for final approval.
 
-    Pipeline per clip: download → generate title → add overlay → mark queued.
-    File paths flow through as return values — nothing stored in DB.
+    Clips land in 'awaiting_title' status until the user picks a title in Discord.
+    discord_bot is the discord.Client instance — needed to post to #clip-final-approval.
     """
     clips = get_next_approved_clips(MAX_QUEUE_SIZE)
     if not clips:
-        print("[queue] No approved clips to fill queue")
+        print("[queue] No approved clips to process")
         return
 
-    print(f"[queue] Processing {len(clips)} clips into queue...")
+    print(f"[queue] Processing {len(clips)} clips...")
 
     for clip in clips:
         try:
             raw_path = _download_clip(clip)
 
-            title = generate_title(clip, raw_path)
-            update_title(clip["clip_id"], title)
+            titles = generate_titles(clip, raw_path)
+            update_title_options(clip["clip_id"], titles)
+            update_title(clip["clip_id"], titles[0])  # set title[0] as working default
 
             overlay_path = add_overlay(raw_path, clip["streamer"])
             os.remove(raw_path)
 
-            update_status(clip["clip_id"], "queued")  # sets queued_at automatically
+            update_status(clip["clip_id"], "awaiting_title")
+
+            if discord_bot:
+                import asyncio
+                asyncio.run_coroutine_threadsafe(
+                    _post_for_final_approval(discord_bot, clip, titles),
+                    discord_bot.loop,
+                )
 
         except Exception as e:
             print(f"[queue] ERROR processing {clip['clip_id']}: {e}")
-            # Leave raw file if it exists — safe to retry next cycle
+
+
+async def _post_for_final_approval(bot, clip, titles):
+    """Post a clip to #clip-final-approval with title options."""
+    from config import DISCORD_CLIP_FINAL_APPROVAL_CHANNEL_ID
+    from bot.discord_bot import post_for_final_approval
+
+    channel = bot.get_channel(DISCORD_CLIP_FINAL_APPROVAL_CHANNEL_ID)
+    if not channel:
+        print("[queue] ERROR: #clip-final-approval channel not found")
+        return
+
+    await post_for_final_approval(channel, clip, titles)
 
 
 def post_next_queued():
@@ -82,7 +103,6 @@ def post_next_queued():
     overlay_path = _overlay_path(clip["clip_id"])
 
     if not os.path.exists(overlay_path):
-        # File was lost (e.g. system restart after queue fill but before upload)
         print(f"[queue] Missing file for {clip['clip_id']} — reverting to approved for reprocessing")
         conn = get_conn()
         conn.execute(
