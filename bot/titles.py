@@ -94,13 +94,12 @@ First, in 2-3 sentences, describe what is actually happening in this clip — th
 Then, write 3 different YouTube Shorts titles based on your understanding of the moment.
 
 Title rules:
-- Under 60 characters, but shorter is almost always better — 2 to 6 words often beats a full sentence
-- Think meme caption, not YouTube description — don't explain the joke, just name the vibe
+- Under 60 characters each
 - Focus on the streamer's reaction, personality, or the moment — NOT the game
+- Feels natural, like something a fan would write — not a news headline
 - Do NOT use: "Check out", "Watch", "This", "When", "You won't believe"
 - Do NOT mention the game name unless it genuinely makes the title better
 - Each title must be meaningfully different from the others — vary the angle, not just the wording
-- If it needs explaining, it's too long
 
 Reply in this exact format:
 SITUATION: (your 2-3 sentence description)
