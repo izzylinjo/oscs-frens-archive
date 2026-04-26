@@ -8,7 +8,6 @@ from config import (
     STREAMERS,
     CLIPS_PER_STREAMER,
 )
-from bot.db import clip_exists, get_last_checked, update_last_checked
 
 # ============================================================
 # Token cache — refreshed only when expired

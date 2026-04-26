@@ -22,6 +22,10 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
+# YouTube OAuth2 credentials — never commit
+client_secrets.json
+youtube_token.json
+
 # Debug scripts
 check.py
 

@@ -12,6 +12,8 @@ REQUIRED = [
     "GEMINI_API_KEY",
     "DISCORD_BOT_TOKEN",
     "DISCORD_USER_ID",
+    "DISCORD_CLIP_REVIEW_CHANNEL_ID",
+    "DISCORD_CLIP_INBOX_CHANNEL_ID",
 ]
 
 missing = [key for key in REQUIRED if not os.getenv(key)]
