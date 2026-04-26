@@ -89,18 +89,21 @@ Audio transcript: {transcript if transcript else "(no clear audio)"}
 
 {'I have also provided a screenshot from the clip so you can see what is happening visually.' if image_b64 else ''}
 
-Write 3 different YouTube Shorts titles for this clip.
+First, in 2-3 sentences, describe what is actually happening in this clip — the situation, the vibe, who might be involved, and what makes it funny or interesting. Consider the audio and the visual together.
 
-Rules:
+Then, write 3 different YouTube Shorts titles based on your understanding of the moment.
+
+Title rules:
 - Under 60 characters each
 - Focus on the streamer's reaction, personality, or the moment — NOT the game
 - Feels like something a fan of the streamer would say, not a news headline
 - Do NOT use: "Check out", "Watch", "This", "When", "You won't believe"
 - Do NOT mention the game name unless it genuinely makes the title better
 - Each title must be meaningfully different from the others
-- If the clip is clearly about roasting or competing with a friend, lean into that
+- If the clip is about roasting or competing with a friend, lean into that
 
-Reply with EXACTLY 3 titles, one per line, numbered like:
+Reply in this exact format:
+SITUATION: (your 2-3 sentence description)
 1. Title one here
 2. Title two here
 3. Title three here
@@ -108,6 +111,12 @@ Reply with EXACTLY 3 titles, one per line, numbered like:
 No extra text, no quotes."""
 
     raw = _ask_gemini(prompt, image_b64=image_b64)
+
+    # Extract and log the situation analysis
+    for line in raw.splitlines():
+        if line.strip().startswith("SITUATION:"):
+            print(f"[titles] Situation: {line.strip()[len('SITUATION:'):].strip()}")
+            break
 
     titles = []
     for line in raw.splitlines():
