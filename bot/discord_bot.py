@@ -168,6 +168,24 @@ async def on_ready():
     else:
         print("[discord] No new clips to post for review")
 
+    # Recover any awaiting_title clips that never made it to #clip-final-approval
+    final_channel = bot.get_channel(DISCORD_CLIP_FINAL_APPROVAL_CHANNEL_ID)
+    if final_channel:
+        from config import DB_PATH
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        pending = conn.execute(
+            "SELECT * FROM clips WHERE status = 'awaiting_title'"
+        ).fetchall()
+        conn.close()
+
+        if pending:
+            print(f"[discord] Recovering {len(pending)} awaiting_title clips...")
+            for row in pending:
+                clip = dict(row)
+                titles = json.loads(clip["title_options"]) if clip.get("title_options") else [clip["title"]]
+                await post_for_final_approval(final_channel, clip, titles)
+
     print("[discord] Ready")
 
 
