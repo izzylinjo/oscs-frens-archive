@@ -1,4 +1,5 @@
 import base64
+import time
 import requests
 from config import GEMINI_API_KEY, GEMINI_MODEL
 
@@ -50,13 +51,19 @@ def _ask_gemini(prompt, image_b64=None):
         })
     parts.append({"text": prompt})
 
-    resp = requests.post(
-        url,
-        json={"contents": [{"parts": parts}]},
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+    for attempt in range(3):
+        resp = requests.post(
+            url,
+            json={"contents": [{"parts": parts}]},
+            timeout=60,
+        )
+        if resp.status_code in (500, 503) and attempt < 2:
+            wait = 5 * (attempt + 1)
+            print(f"[titles] Gemini {resp.status_code} — retrying in {wait}s...")
+            time.sleep(wait)
+            continue
+        resp.raise_for_status()
+        return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
 
 
 def generate_titles(clip, local_path):
